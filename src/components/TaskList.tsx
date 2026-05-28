@@ -2,7 +2,8 @@ import React, { useState } from 'react';
 import { Task } from '@/services/taskService';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, CheckCircle2, Clock, Edit2, PlayCircle, Trash2, Search, Filter } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Calendar, CheckCircle2, Clock, Edit2, PlayCircle, Trash2, Search } from 'lucide-react';
 
 interface TaskListProps {
   tasks: Task[];
