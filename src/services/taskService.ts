@@ -1,4 +1,4 @@
-import { supabase, isSupabaseConfigured } from '@/lib/supabaseClient';
+import { supabaseFetch, isSupabaseConfigured } from '@/lib/supabaseClient';
 
 export interface Task {
   id: string;
@@ -23,16 +23,17 @@ const saveLocalTasks = (tasks: Task[]) => {
 
 export const taskService = {
   async getTasks(): Promise<Task[]> {
-    if (isSupabaseConfigured && supabase) {
-      const { data, error } = await supabase
-        .from('taskflow_items')
-        .select('*')
-        .order('created_at', { ascending: false });
-      
-      if (error) throw error;
-      return data || [];
+    if (isSupabaseConfigured) {
+      try {
+        // Ordena por data de criação decrescente
+        return await supabaseFetch.request('taskflow_items?order=created_at.desc');
+      } catch (error) {
+        console.warn("Falha ao conectar ao Supabase, usando Local Storage:", error);
+        return getLocalTasks().sort((a, b) => 
+          new Date(b.created_at || '').getTime() - new Date(a.created_at || '').getTime()
+        );
+      }
     } else {
-      // Fallback Local Storage
       return getLocalTasks().sort((a, b) => 
         new Date(b.created_at || '').getTime() - new Date(a.created_at || '').getTime()
       );
@@ -46,19 +47,24 @@ export const taskService = {
       created_at: new Date().toISOString()
     };
 
-    if (isSupabaseConfigured && supabase) {
-      const { data, error } = await supabase
-        .from('taskflow_items')
-        .insert([{
-          titulo: task.titulo,
-          status: task.status,
-          data_conclusao: task.data_conclusao
-        }])
-        .select()
-        .single();
-      
-      if (error) throw error;
-      return data;
+    if (isSupabaseConfigured) {
+      try {
+        const result = await supabaseFetch.request('taskflow_items', {
+          method: 'POST',
+          body: JSON.stringify({
+            titulo: task.titulo,
+            status: task.status,
+            data_conclusao: task.data_conclusao
+          })
+        });
+        return result[0];
+      } catch (error) {
+        console.warn("Falha ao salvar no Supabase, salvando localmente:", error);
+        const tasks = getLocalTasks();
+        tasks.push(newTask);
+        saveLocalTasks(tasks);
+        return newTask;
+      }
     } else {
       const tasks = getLocalTasks();
       tasks.push(newTask);
@@ -68,16 +74,23 @@ export const taskService = {
   },
 
   async updateTask(id: string, updates: Partial<Omit<Task, 'id' | 'created_at'>>): Promise<Task> {
-    if (isSupabaseConfigured && supabase) {
-      const { data, error } = await supabase
-        .from('taskflow_items')
-        .update(updates)
-        .eq('id', id)
-        .select()
-        .single();
-      
-      if (error) throw error;
-      return data;
+    if (isSupabaseConfigured) {
+      try {
+        const result = await supabaseFetch.request(`taskflow_items?id=eq.${id}`, {
+          method: 'PATCH',
+          body: JSON.stringify(updates)
+        });
+        return result[0];
+      } catch (error) {
+        console.warn("Falha ao atualizar no Supabase, atualizando localmente:", error);
+        const tasks = getLocalTasks();
+        const index = tasks.findIndex(t => t.id === id);
+        if (index === -1) throw new Error('Tarefa não encontrada');
+        
+        tasks[index] = { ...tasks[index], ...updates };
+        saveLocalTasks(tasks);
+        return tasks[index];
+      }
     } else {
       const tasks = getLocalTasks();
       const index = tasks.findIndex(t => t.id === id);
@@ -90,13 +103,17 @@ export const taskService = {
   },
 
   async deleteTask(id: string): Promise<void> {
-    if (isSupabaseConfigured && supabase) {
-      const { error } = await supabase
-        .from('taskflow_items')
-        .delete()
-        .eq('id', id);
-      
-      if (error) throw error;
+    if (isSupabaseConfigured) {
+      try {
+        await supabaseFetch.request(`taskflow_items?id=eq.${id}`, {
+          method: 'DELETE'
+        });
+      } catch (error) {
+        console.warn("Falha ao deletar no Supabase, deletando localmente:", error);
+        const tasks = getLocalTasks();
+        const filtered = tasks.filter(t => t.id !== id);
+        saveLocalTasks(filtered);
+      }
     } else {
       const tasks = getLocalTasks();
       const filtered = tasks.filter(t => t.id !== id);
