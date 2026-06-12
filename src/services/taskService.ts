@@ -6,6 +6,7 @@ export interface Task {
   status: 'pendente' | 'em_progresso' | 'concluido';
   data_conclusao: string | null;
   created_at?: string;
+  user_id?: string;
 }
 
 const LOCAL_STORAGE_KEY = 'taskflow_items_local';
@@ -33,16 +34,27 @@ export const taskService = {
       return (data as Task[]) || [];
     } catch (error) {
       console.warn("Falha ao conectar ao Supabase, usando Local Storage:", error);
-      return getLocalTasks().sort((a, b) => 
-        new Date(b.created_at || '').getTime() - new Date(a.created_at || '').getTime()
-      );
+      
+      // Filtrar tarefas locais pelo usuário atualmente logado
+      const { data: { session } } = await supabase.auth.getSession();
+      const currentUserId = session?.user?.id;
+      
+      return getLocalTasks()
+        .filter(t => !currentUserId || t.user_id === currentUserId)
+        .sort((a, b) => 
+          new Date(b.created_at || '').getTime() - new Date(a.created_at || '').getTime()
+        );
     }
   },
 
   async createTask(task: Omit<Task, 'id' | 'created_at'>): Promise<Task> {
+    const { data: { session } } = await supabase.auth.getSession();
+    const currentUserId = session?.user?.id || null;
+
     const newTask: Task = {
       id: crypto.randomUUID(),
       ...task,
+      user_id: currentUserId || undefined,
       created_at: new Date().toISOString()
     };
 
@@ -52,7 +64,8 @@ export const taskService = {
         .insert([{
           titulo: task.titulo,
           status: task.status,
-          data_conclusao: task.data_conclusao
+          data_conclusao: task.data_conclusao,
+          user_id: currentUserId
         }])
         .select();
 
