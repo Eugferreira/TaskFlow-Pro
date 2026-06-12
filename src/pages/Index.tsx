@@ -1,19 +1,33 @@
+"use client";
+
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { taskService, Task } from '@/services/taskService';
 import { TaskStats } from '@/components/TaskStats';
 import { TaskForm } from '@/components/TaskForm';
 import { TaskList } from '@/components/TaskList';
 import { Button } from '@/components/ui/button';
 import { showSuccess, showError } from '@/utils/toast';
-import { Plus, Sparkles } from 'lucide-react';
+import { useAuth } from '@/contexts/AuthContext';
+import { Plus, Sparkles, LogOut } from 'lucide-react';
 
 const Index = () => {
+  const { user, loading: authLoading, signOut } = useAuth();
+  const navigate = useNavigate();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [showForm, setShowForm] = useState(false);
 
+  // Redirecionar se não estiver autenticado
+  useEffect(() => {
+    if (!authLoading && !user) {
+      navigate('/login', { replace: true });
+    }
+  }, [user, authLoading, navigate]);
+
   const loadTasks = async () => {
+    if (!user) return;
     try {
       setLoading(true);
       const data = await taskService.getTasks();
@@ -26,8 +40,10 @@ const Index = () => {
   };
 
   useEffect(() => {
-    loadTasks();
-  }, []);
+    if (user) {
+      loadTasks();
+    }
+  }, [user]);
 
   const handleSubmitTask = async (taskData: Omit<Task, 'id' | 'created_at'>) => {
     try {
@@ -66,6 +82,24 @@ const Index = () => {
     }
   };
 
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+      showSuccess('Até logo!');
+      navigate('/login');
+    } catch (error: any) {
+      showError('Erro ao sair: ' + error.message);
+    }
+  };
+
+  if (authLoading || !user) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-gray-50 dark:bg-gray-950">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-indigo-600 border-t-transparent"></div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50/50 pb-12 dark:bg-gray-950">
       {/* Header */}
@@ -81,16 +115,27 @@ const Index = () => {
             </div>
           </div>
 
-          <Button
-            onClick={() => {
-              setEditingTask(null);
-              setShowForm(!showForm);
-            }}
-            size="sm"
-            className="rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white"
-          >
-            <Plus className="mr-1.5 h-4 w-4" /> Nova
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              onClick={() => {
+                setEditingTask(null);
+                setShowForm(!showForm);
+              }}
+              size="sm"
+              className="rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white h-9"
+            >
+              <Plus className="mr-1.5 h-4 w-4" /> Nova
+            </Button>
+            <Button
+              onClick={handleSignOut}
+              variant="ghost"
+              size="icon"
+              className="h-9 w-9 rounded-xl text-gray-500 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800"
+              title="Sair"
+            >
+              <LogOut className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
       </header>
 
