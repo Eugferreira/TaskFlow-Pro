@@ -4,6 +4,16 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Calendar, CheckCircle2, Clock, Edit2, PlayCircle, Trash2, Search } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface TaskListProps {
   tasks: Task[];
@@ -15,6 +25,10 @@ interface TaskListProps {
 export const TaskList: React.FC<TaskListProps> = ({ tasks, onEdit, onDelete, onStatusChange }) => {
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState<'todos' | Task['status']>('todos');
+  
+  // Estados para controle dos modais de confirmação
+  const [taskToDelete, setTaskToDelete] = useState<Task | null>(null);
+  const [taskToEdit, setTaskToEdit] = useState<Task | null>(null);
 
   const filteredTasks = tasks.filter((task) => {
     const matchesSearch = task.titulo.toLowerCase().includes(search.toLowerCase());
@@ -127,7 +141,7 @@ export const TaskList: React.FC<TaskListProps> = ({ tasks, onEdit, onDelete, onS
                   <Button
                     variant="ghost"
                     size="icon"
-                    onClick={() => onEdit(task)}
+                    onClick={() => setTaskToEdit(task)}
                     className="h-8 w-8 rounded-full text-gray-500 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-400 dark:hover:bg-gray-800"
                   >
                     <Edit2 className="h-3.5 w-3.5" />
@@ -135,7 +149,7 @@ export const TaskList: React.FC<TaskListProps> = ({ tasks, onEdit, onDelete, onS
                   <Button
                     variant="ghost"
                     size="icon"
-                    onClick={() => onDelete(task.id)}
+                    onClick={() => setTaskToDelete(task)}
                     className="h-8 w-8 rounded-full text-red-500 hover:bg-red-50 hover:text-red-600 dark:text-red-400 dark:hover:bg-red-950/30"
                   >
                     <Trash2 className="h-3.5 w-3.5" />
@@ -177,6 +191,58 @@ export const TaskList: React.FC<TaskListProps> = ({ tasks, onEdit, onDelete, onS
           ))
         )}
       </div>
+
+      {/* Dialog de Confirmação para Exclusão */}
+      <AlertDialog open={!!taskToDelete} onOpenChange={(open) => !open && setTaskToDelete(null)}>
+        <AlertDialogContent className="rounded-2xl max-w-[90%] sm:max-w-md">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-gray-900 dark:text-white">Excluir Tarefa?</AlertDialogTitle>
+            <AlertDialogDescription className="text-gray-500 dark:text-gray-400">
+              Tem certeza que deseja excluir a tarefa <strong className="text-gray-900 dark:text-white">"{taskToDelete?.titulo}"</strong>? Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="gap-2 sm:gap-0">
+            <AlertDialogCancel className="rounded-xl">Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (taskToDelete) {
+                  onDelete(taskToDelete.id);
+                  setTaskToDelete(null);
+                }
+              }}
+              className="rounded-xl bg-red-600 hover:bg-red-700 text-white"
+            >
+              Confirmar Exclusão
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Dialog de Confirmação para Edição */}
+      <AlertDialog open={!!taskToEdit} onOpenChange={(open) => !open && setTaskToEdit(null)}>
+        <AlertDialogContent className="rounded-2xl max-w-[90%] sm:max-w-md">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-gray-900 dark:text-white">Editar Tarefa?</AlertDialogTitle>
+            <AlertDialogDescription className="text-gray-500 dark:text-gray-400">
+              Tem certeza que deseja editar a tarefa <strong className="text-gray-900 dark:text-white">"{taskToEdit?.titulo}"</strong>? Você será levado ao formulário de edição.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="gap-2 sm:gap-0">
+            <AlertDialogCancel className="rounded-xl">Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (taskToEdit) {
+                  onEdit(taskToEdit);
+                  setTaskToEdit(null);
+                }
+              }}
+              className="rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white"
+            >
+              Confirmar Edição
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
