@@ -7,7 +7,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Sparkles, Mail, Lock, ArrowRight, Loader2 } from 'lucide-react';
+import { Sparkles, Mail, Lock, ArrowRight, Loader2, Check, X } from 'lucide-react';
 import { showSuccess, showError } from '@/utils/toast';
 
 const Login = () => {
@@ -19,6 +19,17 @@ const Login = () => {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
+  // Requisitos de força de senha
+  const passwordRequirements = {
+    minLength: password.length >= 8,
+    hasUppercase: /[A-Z]/.test(password),
+    hasLowercase: /[a-z]/.test(password),
+    hasNumber: /[0-9]/.test(password),
+    hasSpecial: /[^A-Za-z0-9]/.test(password),
+  };
+
+  const isPasswordStrong = Object.values(passwordRequirements).every(Boolean);
+
   useEffect(() => {
     if (!authLoading && session) {
       navigate('/', { replace: true });
@@ -29,6 +40,12 @@ const Login = () => {
     e.preventDefault();
     if (!email || !password) {
       showError('Por favor, preencha todos os campos.');
+      return;
+    }
+
+    // Validar força da senha apenas no cadastro
+    if (isSignUp && !isPasswordStrong) {
+      showError('A senha não atende a todos os requisitos de segurança.');
       return;
     }
 
@@ -129,10 +146,69 @@ const Login = () => {
             </div>
           </div>
 
+          {/* Indicador de Força de Senha (apenas no cadastro) */}
+          {isSignUp && password.length > 0 && (
+            <div className="rounded-2xl border border-gray-100 bg-gray-50/50 p-4 space-y-2 dark:border-gray-800 dark:bg-gray-900/50">
+              <p className="text-xs font-bold text-gray-500 dark:text-gray-400">Requisitos da senha:</p>
+              <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-2">
+                <div className="flex items-center gap-1.5 text-xs">
+                  {passwordRequirements.minLength ? (
+                    <Check className="h-3.5 w-3.5 text-emerald-500" />
+                  ) : (
+                    <X className="h-3.5 w-3.5 text-gray-300 dark:text-gray-600" />
+                  )}
+                  <span className={passwordRequirements.minLength ? "text-emerald-600 dark:text-emerald-400 font-medium" : "text-gray-500"}>
+                    Mínimo 8 caracteres
+                  </span>
+                </div>
+                <div className="flex items-center gap-1.5 text-xs">
+                  {passwordRequirements.hasUppercase ? (
+                    <Check className="h-3.5 w-3.5 text-emerald-500" />
+                  ) : (
+                    <X className="h-3.5 w-3.5 text-gray-300 dark:text-gray-600" />
+                  )}
+                  <span className={passwordRequirements.hasUppercase ? "text-emerald-600 dark:text-emerald-400 font-medium" : "text-gray-500"}>
+                    Letra maiúscula
+                  </span>
+                </div>
+                <div className="flex items-center gap-1.5 text-xs">
+                  {passwordRequirements.hasLowercase ? (
+                    <Check className="h-3.5 w-3.5 text-emerald-500" />
+                  ) : (
+                    <X className="h-3.5 w-3.5 text-gray-300 dark:text-gray-600" />
+                  )}
+                  <span className={passwordRequirements.hasLowercase ? "text-emerald-600 dark:text-emerald-400 font-medium" : "text-gray-500"}>
+                    Letra minúscula
+                  </span>
+                </div>
+                <div className="flex items-center gap-1.5 text-xs">
+                  {passwordRequirements.hasNumber ? (
+                    <Check className="h-3.5 w-3.5 text-emerald-500" />
+                  ) : (
+                    <X className="h-3.5 w-3.5 text-gray-300 dark:text-gray-600" />
+                  )}
+                  <span className={passwordRequirements.hasNumber ? "text-emerald-600 dark:text-emerald-400 font-medium" : "text-gray-500"}>
+                    Pelo menos um número
+                  </span>
+                </div>
+                <div className="flex items-center gap-1.5 text-xs sm:col-span-2">
+                  {passwordRequirements.hasSpecial ? (
+                    <Check className="h-3.5 w-3.5 text-emerald-500" />
+                  ) : (
+                    <X className="h-3.5 w-3.5 text-gray-300 dark:text-gray-600" />
+                  )}
+                  <span className={passwordRequirements.hasSpecial ? "text-emerald-600 dark:text-emerald-400 font-medium" : "text-gray-500"}>
+                    Caractere especial (ex: @, #, $, !)
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
+
           <Button
             type="submit"
-            disabled={loading}
-            className="w-full rounded-xl bg-indigo-600 py-6 text-sm font-bold text-white hover:bg-indigo-700 shadow-lg shadow-indigo-600/10"
+            disabled={loading || (isSignUp && !isPasswordStrong)}
+            className="w-full rounded-xl bg-indigo-600 py-6 text-sm font-bold text-white hover:bg-indigo-700 shadow-lg shadow-indigo-600/10 disabled:opacity-50"
           >
             {loading ? (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -152,7 +228,10 @@ const Login = () => {
         <div className="text-center pt-2">
           <button
             type="button"
-            onClick={() => setIsSignUp(!isSignUp)}
+            onClick={() => {
+              setIsSignUp(!isSignUp);
+              setPassword(''); // Limpa a senha ao alternar
+            }}
             className="text-sm font-semibold text-indigo-600 hover:text-indigo-500 dark:text-indigo-400"
           >
             {isSignUp ? 'Já tem uma conta? Entre' : 'Não tem uma conta? Cadastre-se'}
