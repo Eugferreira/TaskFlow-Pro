@@ -56,17 +56,27 @@ export const taskService = {
     if (error) {
       throw new Error(error.message);
     }
+
+    if (!data || data.length === 0) {
+      throw new Error("Tarefa não encontrada ou você não tem permissão para atualizá-la.");
+    }
+
     return data[0] as Task;
   },
 
   async deleteTask(id: string): Promise<void> {
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from('taskflow_items')
       .delete()
-      .eq('id', id);
+      .eq('id', id)
+      .select();
 
     if (error) {
       throw new Error(error.message);
+    }
+
+    if (!data || data.length === 0) {
+      throw new Error("Tarefa não encontrada ou você não tem permissão para excluí-la.");
     }
   }
 };
