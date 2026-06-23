@@ -1,4 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
+import { sanitizeInput } from '@/utils/security';
 
 export interface Task {
   id: string;
@@ -30,10 +31,17 @@ export const taskService = {
       throw new Error("Usuário não autenticado.");
     }
 
+    // Sanitize the task title before inserting into the database
+    const sanitizedTitulo = sanitizeInput(task.titulo);
+
+    if (!sanitizedTitulo) {
+      throw new Error("O título da tarefa não pode ser vazio após a higienização.");
+    }
+
     const { data, error } = await supabase
       .from('taskflow_items')
       .insert([{
-        titulo: task.titulo,
+        titulo: sanitizedTitulo,
         status: task.status,
         data_conclusao: task.data_conclusao,
         user_id: currentUserId
@@ -47,9 +55,20 @@ export const taskService = {
   },
 
   async updateTask(id: string, updates: Partial<Omit<Task, 'id' | 'created_at'>>): Promise<Task> {
+    const updatedFields: Partial<Omit<Task, 'id' | 'created_at'>> = { ...updates };
+
+    // Sanitize the task title if it is being updated
+    if (updates.titulo !== undefined) {
+      const sanitizedTitulo = sanitizeInput(updates.titulo);
+      if (!sanitizedTitulo) {
+        throw new Error("O título da tarefa não pode ser vazio após a higienização.");
+      }
+      updatedFields.titulo = sanitizedTitulo;
+    }
+
     const { data, error } = await supabase
       .from('taskflow_items')
-      .update(updates)
+      .update(updatedFields)
       .eq('id', id)
       .select();
 

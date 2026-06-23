@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Calendar, Plus, Save, X, Sparkles, CheckCircle2, Clock, PlayCircle } from 'lucide-react';
+import { sanitizeInput } from '@/utils/security';
 
 interface TaskFormProps {
   onSubmit: (task: Omit<Task, 'id' | 'created_at'>) => void;
@@ -30,10 +31,13 @@ export const TaskForm: React.FC<TaskFormProps> = ({ onSubmit, initialTask, onCan
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!titulo.trim()) return;
+    
+    // Sanitize the input to remove any HTML/JS tags
+    const sanitizedTitulo = sanitizeInput(titulo);
+    if (!sanitizedTitulo) return;
 
     onSubmit({
-      titulo: titulo.trim(),
+      titulo: sanitizedTitulo,
       status,
       data_conclusao: dataConclusao ? new Date(dataConclusao).toISOString() : null,
     });
