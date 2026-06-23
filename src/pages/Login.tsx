@@ -7,7 +7,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Sparkles, Mail, Lock, ArrowRight, Loader2, AlertCircle } from 'lucide-react';
+import { Sparkles, Mail, Lock, ArrowRight, Loader2 } from 'lucide-react';
 import { showSuccess, showError } from '@/utils/toast';
 
 const Login = () => {
@@ -18,7 +18,6 @@ const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const [networkError, setNetworkError] = useState(false);
 
   useEffect(() => {
     if (!authLoading && session) {
@@ -34,7 +33,6 @@ const Login = () => {
     }
 
     setLoading(true);
-    setNetworkError(false);
 
     try {
       if (isSignUp) {
@@ -63,15 +61,7 @@ const Login = () => {
         navigate('/', { replace: true });
       }
     } catch (error: any) {
-      console.error("Erro de autenticação:", error);
-      
-      // Detectar bloqueio de rede / Adblocker
-      if (error.message === 'Failed to fetch' || error.message?.includes('fetch')) {
-        setNetworkError(true);
-        showError('Conexão bloqueada pelo navegador.');
-      } else {
-        showError(error.message || 'Ocorreu um erro ao processar sua solicitação.');
-      }
+      showError(error.message || 'Ocorreu um erro ao processar sua solicitação.');
     } finally {
       setLoading(false);
     }
@@ -100,19 +90,6 @@ const Login = () => {
             {isSignUp ? 'Crie sua conta gratuita agora' : 'Sua gestão inteligente de tarefas começa aqui'}
           </p>
         </div>
-
-        {/* Alerta de Adblocker / Erro de Rede */}
-        {networkError && (
-          <div className="rounded-2xl bg-amber-50 p-4 text-sm text-amber-800 border border-amber-200 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-900/50 flex gap-3 items-start">
-            <AlertCircle className="h-5 w-5 shrink-0 mt-0.5" />
-            <div className="space-y-1">
-              <p className="font-bold">Conexão com o servidor bloqueada</p>
-              <p className="text-xs leading-relaxed">
-                Isso geralmente acontece se você usa um <strong>AdBlocker</strong> (como uBlock Origin) ou o navegador <strong>Brave</strong>. Por favor, desative o bloqueador para este site e tente novamente.
-              </p>
-            </div>
-          </div>
-        )}
 
         {/* Formulário Nativo */}
         <form onSubmit={handleSubmit} className="mt-6 space-y-4">
