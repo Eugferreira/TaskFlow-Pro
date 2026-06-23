@@ -31,11 +31,11 @@ export const taskService = {
       throw new Error("Usuário não autenticado.");
     }
 
-    // Sanitize the task title before inserting into the database
+    // Clean and trim the task title before inserting into the database
     const sanitizedTitulo = sanitizeInput(task.titulo);
 
     if (!sanitizedTitulo) {
-      throw new Error("O título da tarefa não pode ser vazio após a higienização.");
+      throw new Error("O título da tarefa não pode ser vazio.");
     }
 
     const { data, error } = await supabase
@@ -57,11 +57,11 @@ export const taskService = {
   async updateTask(id: string, updates: Partial<Omit<Task, 'id' | 'created_at'>>): Promise<Task> {
     const updatedFields: Partial<Omit<Task, 'id' | 'created_at'>> = { ...updates };
 
-    // Sanitize the task title if it is being updated
+    // Clean and trim the task title if it is being updated
     if (updates.titulo !== undefined) {
       const sanitizedTitulo = sanitizeInput(updates.titulo);
       if (!sanitizedTitulo) {
-        throw new Error("O título da tarefa não pode ser vazio após a higienização.");
+        throw new Error("O título da tarefa não pode ser vazio.");
       }
       updatedFields.titulo = sanitizedTitulo;
     }

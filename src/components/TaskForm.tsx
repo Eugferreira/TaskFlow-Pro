@@ -32,7 +32,7 @@ export const TaskForm: React.FC<TaskFormProps> = ({ onSubmit, initialTask, onCan
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Sanitize the input to remove any HTML/JS tags
+    // Clean and validate the input
     const sanitizedTitulo = sanitizeInput(titulo);
     if (!sanitizedTitulo) return;
 

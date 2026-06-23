@@ -1,10 +1,9 @@
 /**
- * Sanitizes a string input by removing HTML tags to prevent XSS (Cross-Site Scripting) attacks.
- * This ensures that task titles and other text inputs are stored as safe plain text.
+ * Cleans and trims the input string.
+ * We rely on React's built-in automatic escaping to prevent XSS (Cross-Site Scripting)
+ * when rendering values in JSX, avoiding fragile custom regex-based sanitization.
  */
 export function sanitizeInput(input: string): string {
   if (!input) return '';
-  return input
-    .replace(/<[^>]*>/g, '') // Strip all HTML tags
-    .trim();
+  return input.trim();
 }
